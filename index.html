@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>যুলোজি অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "কোন এনজাইম ব্যাকটেরিয়া ধ্বংস করে?",
+          options: {
+            a: "পেপসিন",
+            b: "মল্টেজ",
+            c: "টায়ালিন",
+            d: "লাইসোজাইম",
+          },
+          correct: "d",
+          explanation:
+            "<p><strong>লাইসোজাইম (Lysozyme)</strong> হলো একটি এনজাইম যা ব্যাকটেরিয়ার কোষপ্রাচীর ভেঙে দিয়ে তাদের ধ্বংস করতে সাহায্য করে। এটি লালা, চোখের জল এবং অন্যান্য শারীরিক ক্ষরণে পাওয়া যায়।</p>",
+        },
+        {
+          id: 2,
+          question: "অন্ত্রের প্রথম প্রতিরক্ষার স্তর কোনটি?",
+          options: {
+            a: "পাকস্থলির অ্যাসিড, মাইক্রোবায়োম ও মলত্যাগ",
+            b: "সিলিয়া, কমপ্লিমেন্ট তন্ত্র ও সাইটোকাইনস",
+            c: "ত্বক, ফ্যাগোসাইটস ও কমপ্লিমেন্ট তন্ত্র",
+            d: "লালা, পাকস্থলির এনজাইম ও ফ্যাগোসাইটস",
+          },
+          correct: "a",
+          explanation:
+            "<p>অন্ত্রের (Gastrointestinal tract) প্রথম প্রতিরক্ষা স্তরে বিভিন্ন ভৌত ও রাসায়নিক বাধা কাজ করে। এর মধ্যে <strong>পাকস্থলির অ্যাসিড (Stomach acid)</strong>, অন্ত্রের <strong>মাইক্রোবায়োম (Microbiome)</strong> যা উপকারী ব্যাকটেরিয়া দ্বারা গঠিত, এবং নিয়মিত <strong>মলত্যাগ (Defecation)</strong> প্যাথোজেন দূর করতে সাহায্য করে। এই সবগুলোই অন্ত্রে জীবাণুর প্রবেশ এবং বৃদ্ধিকে বাধা দেয়।</p>",
+        },
+        {
+          id: 3,
+          question: "নিচের কোনটি ম্যাক্রোফেজের কাজ নয়?",
+          options: {
+            a: "বিভিন্ন ধরনের কোষবিষ তৈরি করা",
+            b: "বিভিন্ন ধরনের এন্টিবডি তৈরি করা",
+            c: "জীর্ণ কোষকে অপসারণ করা",
+            d: "রিঅ্যাকটিভ অক্সিজেন ইন্টারমিডিয়েট তৈরি করা",
+          },
+          correct: "b",
+          explanation:
+            "<p><strong>ম্যাক্রোফেজ (Macrophages)</strong> হলো ফ্যাগোসাইটিক কোষ যা জীবাণু ভক্ষণ করে, জীর্ণ কোষ এবং ধ্বংসাবশেষ অপসারণ করে, এবং প্রদাহজনক প্রতিক্রিয়া শুরু করে। তারা <strong>বিভিন্ন ধরনের কোষবিষ (Cytotoxins) এবং রিঅ্যাকটিভ অক্সিজেন ইন্টারমিডিয়েট (Reactive Oxygen Intermediates - ROIs)</strong> তৈরি করে প্যাথোজেন ধ্বংস করে। তবে, <strong>অ্যান্টিবডি (Antibodies) তৈরি করা ম্যাক্রোফেজের কাজ নয়</strong>; এটি বি লিম্ফোসাইট (B lymphocytes) কোষের কাজ।</p>",
+        },
+        {
+          id: 4,
+          question: "দেহের দ্বিতীয় প্রতিরক্ষা স্তর কোনটি?",
+          options: {
+            a: "স্মৃতিকোষ",
+            b: "জ্বর",
+            c: "ত্বক",
+            d: "অ্যান্টিবডি",
+          },
+          correct: "b",
+          explanation:
+            "<p>দেহের দ্বিতীয় প্রতিরক্ষা স্তরটি হলো সহজাত (innate) প্রতিরোধ ব্যবস্থা, যা জীবাণুর অনুপ্রবেশের পর দ্রুত সক্রিয় হয়। এর মধ্যে <strong>জ্বর (Fever)</strong>, প্রদাহ, ফ্যাগোসাইটিক কোষ (যেমন নিউট্রোফিল, ম্যাক্রোফেজ) এবং প্রাকৃতিক কিলার কোষ (Natural Killer cells) অন্তর্ভুক্ত। ত্বক হলো প্রথম প্রতিরক্ষা স্তর, এবং স্মৃতিকোষ ও অ্যান্টিবডি তৃতীয় প্রতিরক্ষা স্তরের অংশ।</p>",
+        },
+        {
+          id: 5,
+          question: "কোন কোষ ম্যাক্রোফেজে (macrophages) রূপান্তরিত হয়?",
+          options: {
+            a: "Eosinophil",
+            b: "Monocyte",
+            c: "Basophil",
+            d: "Lymphocyte",
+          },
+          correct: "b",
+          explanation:
+            "<p><strong>মনোসাইট (Monocyte)</strong> হলো এক ধরনের শ্বেত রক্তকণিকা যা রক্তে সঞ্চালিত হয়। যখন তারা রক্ত থেকে টিস্যুতে (কলায়) প্রবেশ করে, তখন তারা <strong>ম্যাক্রোফেজে (Macrophages) রূপান্তরিত হয়</strong> এবং ফ্যাগোসাইটোসিসে অংশ নেয়।</p>",
+        },
+        {
+          id: 6,
+          question:
+            "ভাইরাসের আক্রমণে শরীরের ভিতরে স্বতঃস্ফূর্তভাবে কোনটি তৈরি হয়?",
+          options: {
+            a: "অ্যান্টিবডি",
+            b: "ইন্টারফেরন",
+            c: "নিউট্রোফিল",
+            d: "মনোসাইট",
+          },
+          correct: "b",
+          explanation:
+            "<p>ভাইরাস দ্বারা আক্রান্ত কোষগুলো <strong>ইন্টারফেরন (Interferon)</strong> নামক প্রোটিন তৈরি করে। এই ইন্টারফেরনগুলো পার্শ্ববর্তী সুস্থ কোষগুলোকে ভাইরাসের সংক্রমণ থেকে রক্ষা করতে সাহায্য করে। এটি সহজাত অনাক্রম্যতার একটি অংশ।</p>",
+        },
+        {
+          id: 7,
+          question: "নিচের কোনটি মানুষের প্রাথমিক প্রতিরোধ ব্যবস্থা নয়?",
+          options: {
+            a: "লোম",
+            b: "লালা",
+            c: "ইন্টারফেরন",
+            d: "সিরুমেন",
+          },
+          correct: "c",
+          explanation:
+            "<p>মানুষের প্রাথমিক প্রতিরোধ ব্যবস্থা (First line of defense) হলো ভৌত ও রাসায়নিক বাধা যা জীবাণুকে শরীরে প্রবেশ করতে বাধা দেয়। এর মধ্যে ত্বক, লোম, লালা, সিরুমেন (কানের খোল), চোখের জল, শ্লেষ্মা, পাকস্থলীর অ্যাসিড ইত্যাদি অন্তর্ভুক্ত। <strong>ইন্টারফেরন (Interferon)</strong> হলো শরীরের দ্বিতীয় প্রতিরক্ষা স্তরের অংশ, যা ভাইরাস আক্রমণের প্রতিক্রিয়া হিসেবে তৈরি হয়।</p>",
+        },
+        {
+          id: 8,
+          question: "মানব দেহে সর্ব বৃহৎ অঙ্গ কোনটি?",
+          options: {
+            a: "যকৃত",
+            b: "ত্বক",
+            c: "মস্তিষ্ক",
+            d: "প্লীহা",
+          },
+          correct: "b",
+          explanation:
+            "<p>মানবদেহের <strong>ত্বক (Skin)</strong> হলো সর্ব বৃহৎ অঙ্গ। এটি দেহের বাইরের আবরণ তৈরি করে এবং শরীরকে বিভিন্ন ক্ষতিকারক পদার্থ, যেমন জীবাণু, আঘাত এবং অতিবেগুনি রশ্মি থেকে রক্ষা করে।</p>",
+        },
+        {
+          id: 9,
+          question: "ব্যাকটেরিয়া ধ্বংসে অ্যান্টিবডিকে সহায়তা করে কোনটি?",
+          options: {
+            a: "কমপ্লিমেন্ট সিস্টেম",
+            b: "ভ্যাক্সিন",
+            c: "ইন্টারফেরন",
+            d: "ম্যাক্রোফেজ",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>কমপ্লিমেন্ট সিস্টেম (Complement system)</strong> হলো রক্তে থাকা প্রায় ৩০টি প্রোটিনের একটি সেট যা অ্যান্টিবডি এবং অন্যান্য ইমিউন কোষের সাথে কাজ করে জীবাণু ধ্বংস করতে সাহায্য করে। এটি অ্যান্টিবডি দ্বারা চিহ্নিত ব্যাকটেরিয়াকে সরাসরি মেরে ফেলতে পারে বা ফ্যাগোসাইটোসিসকে সহজ করতে পারে।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "লাইসোজাইম এনজাইম ব্যাকটেরিয়ার যে কোষ প্রাচীরকে বিগলিত করে নষ্ট করে-",
+          options: {
+            a: "ডাইস্যাকারাইড নির্মিত",
+            b: "ট্রাইস্যাকারাইড নির্মিত",
+            c: "পলিস্যাকারাইড নির্মিত",
+            d: "মনোস্যাকারাইড নির্মিত",
+          },
+          correct: "c",
+          explanation:
+            "<p>লাইসোজাইম (Lysozyme) এনজাইম ব্যাকটেরিয়ার <strong>পলিস্যাকারাইড নির্মিত</strong> কোষপ্রাচীরকে (peptidoglycan layer) বিগলিত করে তাদের ধ্বংস করে। এই পলিস্যাকারাইড শৃঙ্খলগুলির মধ্যে গ্লাইকোসিডিক বন্ধন ভাঙতে পারে।</p>",
+        },
+        {
+          id: 11,
+          question: "নিউট্রোফিল কোনটিকে ধ্বংস করে?",
+          options: {
+            a: "ভাইরাস",
+            b: "শৈবাল",
+            c: "ছত্রাক",
+            d: "ব্যাকটেরিয়া",
+          },
+          correct: "d",
+          explanation:
+            "<p><strong>নিউট্রোফিল (Neutrophils)</strong> হলো শ্বেত রক্তকণিকার একটি প্রধান প্রকার, যা ফ্যাগোসাইটোসিসের মাধ্যমে <strong>ব্যাকটেরিয়া</strong> এবং ছত্রাককে ধ্বংস করে। তারা প্রদাহজনক প্রতিক্রিয়াতে প্রথম সাড়াদানকারী কোষগুলির মধ্যে অন্যতম।</p>",
+        },
+        {
+          id: 12,
+          question: "প্রথম প্রতিরক্ষা স্তরের উদাহরণ নিচের কোনটি?",
+          options: {
+            a: "ইন্টারফেরন",
+            b: "সহজাত মারণ কোষ",
+            c: "সিরুমেন",
+            d: "ম্যাক্রোফেজ",
+          },
+          correct: "c",
+          explanation:
+            "<p>প্রথম প্রতিরক্ষা স্তর হলো দেহের বাহ্যিক বাধা যা জীবাণুকে প্রবেশ করতে বাধা দেয়। <strong>সিরুমেন (Cerumen)</strong> বা কানের খোল হলো এমন একটি উদাহরণ, যা কানের প্রবেশপথে ময়লা, ধুলোবালি এবং জীবাণু আটকে ফেলে। ইন্টারফেরন, সহজাত মারণ কোষ (Natural Killer cells) এবং ম্যাক্রোফেজ দ্বিতীয় প্রতিরক্ষা স্তরের অংশ।</p>",
+        },
+        {
+          id: 13,
+          question:
+            "নিচের কোন অঙ্গটি মানবদেহের প্রথম প্রতিরক্ষা স্তরের অন্তর্ভুক্ত?",
+          options: {
+            a: "ত্বক",
+            b: "পরিপাক গ্রন্থি",
+            c: "রক্ত",
+            d: "অ্যান্টিবডি",
+          },
+          correct: "a",
+          explanation:
+            "<p>মানবদেহের <strong>ত্বক (Skin)</strong> হলো প্রথম প্রতিরক্ষা স্তরের একটি গুরুত্বপূর্ণ অংশ। এটি একটি ভৌত বাধা তৈরি করে যা বেশিরভাগ জীবাণুকে শরীরে প্রবেশ করতে বাধা দেয়।</p>",
+        },
+        {
+          id: 14,
+          question: "নিচের কোনটি ত্বকের সংক্রমণ নয়?",
+          options: {
+            a: "দাদ",
+            b: "আর্থ্রাইটিস",
+            c: "আঁচিল",
+            d: "করোগ",
+          },
+          correct: "b",
+          explanation:
+            "<p><strong>আর্থ্রাইটিস (Arthritis)</strong> হলো জয়েন্ট বা অস্থিসন্ধির প্রদাহ, যা হাড়ের সংযোগস্থলকে প্রভাবিত করে। এটি <strong>ত্বকের সংক্রমণ নয়</strong>। দাদ (Ringworm) একটি ছত্রাক সংক্রমণ, আঁচিল (Warts) একটি ভাইরাস সংক্রমণ, এবং করোগ (Corns and calluses) ত্বকের ঘষা বা চাপের কারণে সৃষ্ট হয়, যা ত্বকের একটি সমস্যা।</p>",
+        },
+        {
+          id: 15,
+          question: "নিচের কোনটি মুখবিবরে ব্যাকটেরিয়া ধ্বংস করে?",
+          options: {
+            a: "প্রোটিয়েজ",
+            b: "ইন্টারফেরন",
+            c: "লাইসোজাইম",
+            d: "সাইটোকাইন",
+          },
+          correct: "c",
+          explanation:
+            "<p>মুখবিবরে (Oral cavity) লালায় <strong>লাইসোজাইম (Lysozyme)</strong> এনজাইম থাকে যা ব্যাকটেরিয়ার কোষপ্রাচীর ভেঙে দিয়ে তাদের ধ্বংস করে এবং মুখকে সংক্রমণ থেকে রক্ষা করে।</p>",
+        },
+        {
+          id: 16,
+          question: "ত্বকে বিদ্যমান কোন অ্যাসিড জীবাণু ধ্বংস করে?",
+          options: {
+            a: "ল্যাকটিক অ্যাসিড",
+            b: "হাইড্রোক্লোরিক অ্যাসিড",
+            c: "হায়ালোরনিক অ্যাসিড",
+            d: "অ্যাসিটিক অ্যাসিড",
+          },
+          correct: "a",
+          explanation:
+            "<p>ত্বকের পৃষ্ঠে স্বাভাবিক ফ্লোরা এবং ঘামের কারণে একটি অ্যাসিডিক পরিবেশ থাকে, যা জীবাণুর বৃদ্ধিকে বাধা দেয়। <strong>ল্যাকটিক অ্যাসিড (Lactic acid)</strong> এবং ফ্যাটি অ্যাসিড ত্বকের এই অ্যাসিডিক পরিবেশ বজায় রাখতে সাহায্য করে এবং জীবাণু ধ্বংসে ভূমিকা রাখে। হাইড্রোক্লোরিক অ্যাসিড পাকস্থলীতে থাকে, এবং হায়ালোরনিক অ্যাসিড একটি পলিস্যাকারাইড যা ত্বক এবং যোজক কলায় পাওয়া যায়, এটি সরাসরি জীবাণু ধ্বংস করে না।</p>",
+        },
+        {
+          id: 17,
+          question: "লালায় বিদ্যমান কোন পদার্থ ব্যাকটেরিয়া ধ্বংস করে?",
+          options: {
+            a: "লাইসোজাইম",
+            b: "ফসফোলাইপেজ A",
+            c: "টায়ালিন",
+            d: "হিস্টামিন",
+          },
+          correct: "a",
+          explanation:
+            "<p>লালায় (Saliva) <strong>লাইসোজাইম (Lysozyme)</strong> নামক একটি এনজাইম থাকে যা ব্যাকটেরিয়ার কোষপ্রাচীর ভেঙে দিয়ে তাদের ধ্বংস করে। এটি মুখকে সংক্রমণ থেকে রক্ষা করার একটি গুরুত্বপূর্ণ উপাদান। টায়ালিন শর্করা পরিপাকে সাহায্য করে।</p>",
+        },
+        {
+          id: 18,
+          question:
+            "দেহের স্বাভাবিক অবস্থায় ভাইরাসের বিরুদ্ধে প্রতিরোধ গড়ে তোলে কোনটি?",
+          options: {
+            a: "কমপ্লিমেন্ট সিস্টেম",
+            b: "ভ্যাক্সিন",
+            c: "ইন্টারফেরন",
+            d: "ম্যাক্রোফেজ",
+          },
+          correct: "c",
+          explanation:
+            "<p>ভাইরাসের আক্রমণে আক্রান্ত কোষগুলো <strong>ইন্টারফেরন (Interferon)</strong> নামক প্রোটিন তৈরি করে। এই ইন্টারফেরনগুলো পার্শ্ববর্তী সুস্থ কোষগুলোকে ভাইরাসের প্রতিলিপিকরণ (replication) থেকে রক্ষা করে এবং ভাইরাসের বিরুদ্ধে শরীরের প্রতিরোধ ক্ষমতা গড়ে তোলে।</p>",
+        },
+        {
+          id: 19,
+          question: "ইন্টারফেরনের ক্ষেত্রে নিম্নের কোনটি সঠিক?",
+          options: {
+            a: "অনাক্রম্যতা ও স্পেসিফিক",
+            b: "T লিম্ফোসাইট হতে উৎপন্ন হয়",
+            c: "গাঠনিক উপাদান লিপোপ্রোটিন",
+            d: "ব্যাকটেরিয়ার বংশবৃদ্ধিতে ব্যাঘাত ঘটায়",
+          },
+          correct: "b",
+          explanation:
+            "<p><strong>ইন্টারফেরন (Interferon)</strong> হলো এক ধরনের সাইটোকাইন (cytokine) যা সাধারণত ভাইরাস আক্রান্ত কোষ, <strong>T লিম্ফোসাইট</strong>, প্রাকৃতিক কিলার কোষ এবং ম্যাক্রোফেজ দ্বারা উৎপন্ন হয়। এটি ভাইরাস প্রতিলিপিকরণকে বাধা দেয়। এটি ভাইরাস-নির্দিষ্ট হলেও, এর কার্যকারিতা স্পেসিফিক অনাক্রম্যতার চেয়ে সহজাত অনাক্রম্যতার অংশ। এর গাঠনিক উপাদান গ্লাইকোপ্রোটিন (প্রোটিন), লিপোপ্রোটিন নয়। এটি প্রধানত ভাইরাসের বংশবৃদ্ধিতে ব্যাঘাত ঘটায়, ব্যাকটেরিয়ার নয়।</p>",
+        },
+        {
+          id: 20,
+          question: "কোষবিষ ROIs ও RNIs উৎপাদন করে নিচের কোনটি?",
+          options: {
+            a: "ফ্যাগোসাইট",
+            b: "B লিম্ফোসাইট",
+            c: "NK কোষ",
+            d: "T লিম্ফোসাইট",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>ফ্যাগোসাইট (Phagocytes)</strong>, যেমন ম্যাক্রোফেজ (Macrophages) এবং নিউট্রোফিল (Neutrophils), যখন জীবাণু ভক্ষণ করে, তখন তারা <strong>রিঅ্যাকটিভ অক্সিজেন ইন্টারমিডিয়েট (Reactive Oxygen Intermediates - ROIs)</strong> এবং <strong>রিঅ্যাকটিভ নাইট্রোজেন ইন্টারমিডিয়েট (Reactive Nitrogen Intermediates - RNIs)</strong> তৈরি করে। এই শক্তিশালী রাসায়নিকগুলো ভক্ষিত জীবাণুকে ধ্বংস করতে সাহায্য করে।</p>",
+        },
+        {
+          id: 21,
+          question: "ডেনড্রাইট কোষ কোথায় সৃষ্টি হয়?",
+          options: {
+            a: "যকৃতে",
+            b: "বৃক্কে",
+            c: "অস্থিমজ্জায়",
+            d: "প্লীহায়",
+          },
+          correct: "c",
+          explanation:
+            "<p><strong>ডেনড্রাইটিক কোষ (Dendritic cells)</strong> হলো অত্যন্ত গুরুত্বপূর্ণ অ্যান্টিজেন-উপস্থাপনকারী কোষ (Antigen-presenting cells - APCs)। তারা <strong>অস্থিমজ্জায় (Bone marrow)</strong> সৃষ্ট হয় এবং তারপর রক্ত প্রবাহের মাধ্যমে বিভিন্ন টিস্যুতে চলে যায়, যেখানে তারা প্যাথোজেন সনাক্ত করে এবং অভিযোজিত প্রতিরোধ প্রতিক্রিয়া শুরু করে।</p>",
+        },
+        {
+          id: 22,
+          question:
+            "ব্যাকটেরিয়া ধ্বংসকারী কোষ ম্যাক্রোফেজ আবিষ্কার করেন কোন বিজ্ঞানী?",
+          options: {
+            a: "ক্যালমিটি গুরিন",
+            b: "লুই পাস্তুর",
+            c: "এডওয়ার্ড জেনার",
+            d: "আইলা মিকনিকভ",
+          },
+          correct: "d",
+          explanation:
+            "<p><strong>আইলিয়া মেচনিকভ (Élie Metchnikoff)</strong>, একজন রুশ প্রাণিবিজ্ঞানী, ১৮৮২ সালে <strong>ফ্যাগোসাইটোসিস (Phagocytosis)</strong> প্রক্রিয়া এবং ম্যাক্রোফেজের জীবাণু ভক্ষণের ক্ষমতা আবিষ্কার করেন। এই আবিষ্কারের জন্য তিনি ১৯০৮ সালে নোবেল পুরস্কার লাভ করেন।</p>",
+        },
+        {
+          id: 23,
+          question:
+            "নিচের কোনটি মানবদেহের প্রথম প্রতিরক্ষা স্তরের সাথে সম্পর্কিত?",
+          options: {
+            a: "প্রদাহ",
+            b: "ইন্টারফেরন",
+            c: "জ্বর",
+            d: "রক্ততঞ্চন",
+          },
+          correct: "d",
+          explanation:
+            "<p>মানবদেহের প্রথম প্রতিরক্ষা স্তর হলো বাহ্যিক বাধা যা জীবাণুকে প্রবেশ করতে বাধা দেয়। <strong>রক্ততঞ্চন (Blood clotting)</strong> এই স্তরের সাথে সম্পর্কিত, কারণ এটি আঘাতের স্থানে রক্তপাত বন্ধ করে এবং জীবাণুর প্রবেশে একটি ভৌত বাধা তৈরি করে। প্রদাহ, ইন্টারফেরন এবং জ্বর হলো দ্বিতীয় প্রতিরক্ষা স্তরের অংশ।</p>",
+        },
+        {
+          id: 24,
+          question: "জীবাণু ভক্ষণ করে দেহের প্রতিরক্ষায় অংশ নেয় কোনটি?",
+          options: {
+            a: "নিউট্রোফিল",
+            b: "বেসোফিল",
+            c: "লিম্ফোসাইট",
+            d: "লাইসোজোম",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>নিউট্রোফিল (Neutrophils)</strong> হলো এক ধরনের শ্বেত রক্তকণিকা (ফ্যাগোসাইট) যা <strong>জীবাণু ভক্ষণ (Phagocytosis)</strong> করে দেহের প্রতিরক্ষায় অংশ নেয়। তারা সংক্রমণের স্থানে দ্রুত পৌঁছায় এবং প্যাথোজেন ধ্বংস করে।</p>",
+        },
+        {
+          id: 25,
+          question: "ম্যাক্রোফেজের ক্ষেত্রে নিচের কোনটি সঠিক?",
+          options: {
+            a: "কলায় অবস্থান করে",
+            b: "পরিণত নিউট্রোফিল",
+            c: "পুঁজ হিসেবে দেহের বাহিরে নিষ্ক্রান্ত হয়",
+            d: "সাইটোপ্লাজম বর্ণ নিরপেক্ষ দানাযুক্ত",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>ম্যাক্রোফেজ (Macrophages)</strong> হলো মনোসাইট থেকে উদ্ভূত কোষ যা রক্ত থেকে বিভিন্ন <strong>কলায় (tissues) স্থানান্তরিত হয় এবং সেখানেই অবস্থান করে</strong>। তারা প্যাথোজেন এবং সেলুলার ধ্বংসাবশেষ ফ্যাগোসাইটোসিসের মাধ্যমে পরিষ্কার করে। নিউট্রোফিল পুঁজ হিসেবে নিষ্ক্রান্ত হতে পারে, এবং নিউট্রোফিলের সাইটোপ্লাজম বর্ণ নিরপেক্ষ দানাযুক্ত।</p>",
+        },
+        {
+          id: 26,
+          question: "পাইরোজেন কী জাতীয় পদার্থ?",
+          options: {
+            a: "প্রোটিন",
+            b: "শর্করা",
+            c: "লিপিড",
+            d: "ফেনল",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>পাইরোজেন (Pyrogen)</strong> হলো এমন পদার্থ যা জ্বর সৃষ্টি করে। এগুলি সাধারণত <strong>প্রোটিন</strong> বা লাইপোপলিস্যাকারাইড (LPS) হতে পারে যা ব্যাকটেরিয়া বা শরীরের ইমিউন কোষ দ্বারা উৎপন্ন হয়।</p>",
+        },
+        {
+          id: 27,
+          question: "মানবদেহের দ্বিতীয় প্রতিরক্ষা স্তর কী দ্বারা নিয়ন্ত্রিত?",
+          options: {
+            a: "রক্ত",
+            b: "ত্বক",
+            c: "শ্লেষ্মা",
+            d: "অ্যান্টিবডি",
+          },
+          correct: "a",
+          explanation:
+            "<p>মানবদেহের দ্বিতীয় প্রতিরক্ষা স্তর (Innate immunity) <strong>রক্তে</strong> বিদ্যমান বিভিন্ন কোষ (যেমন নিউট্রোফিল, ম্যাক্রোফেজ, প্রাকৃতিক কিলার কোষ) এবং দ্রবণীয় উপাদান (যেমন কমপ্লিমেন্ট প্রোটিন, ইন্টারফেরন) দ্বারা নিয়ন্ত্রিত হয়। যদিও এটি ত্বক এবং শ্লেষ্মার মতো শারীরিক বাধা পেরিয়ে যাওয়া জীবাণুকে মোকাবেলা করে, এর কার্যকরী উপাদানগুলো প্রধানত রক্তে থাকে এবং রক্ত প্রবাহের মাধ্যমে সংক্রমণের স্থানে পৌঁছায়।</p>",
+        },
+        {
+          id: 28,
+          question: "দ্বিতীয় প্রতিরক্ষা স্তরে ভূমিকা রাখে কোনটি?",
+          options: {
+            a: "নিউট্রোফিল",
+            b: "স্পার্মিন",
+            c: "লাইসোজাইম",
+            d: "সিরুমেন",
+          },
+          correct: "a",
+          explanation:
+            "<p>দ্বিতীয় প্রতিরক্ষা স্তরের (Innate immunity) কোষীয় উপাদানগুলির মধ্যে <strong>নিউট্রোফিল (Neutrophils)</strong> অন্যতম। তারা ফ্যাগোসাইটোসিসের মাধ্যমে জীবাণু ভক্ষণ করে এবং প্রদাহজনক প্রতিক্রিয়াতে অংশ নেয়। লাইসোজাইম এবং সিরুমেন প্রথম প্রতিরক্ষা স্তরের অংশ।</p>",
+        },
+        {
+          id: 29,
+          question: "কোনটি মানবদেহের দ্বিতীয় প্রতিরক্ষা স্তর হিসেবে কাজ করে?",
+          options: {
+            a: "ফ্যাগোসাইট",
+            b: "ত্বক",
+            c: "সিরুমেন",
+            d: "লালা",
+          },
+          correct: "a",
+          explanation:
+            "<p>মানবদেহের দ্বিতীয় প্রতিরক্ষা স্তর হলো সহজাত অনাক্রম্যতা, যেখানে কোষীয় উপাদানগুলি গুরুত্বপূর্ণ ভূমিকা পালন করে। <strong>ফ্যাগোসাইট (Phagocytes)</strong>, যেমন নিউট্রোফিল এবং ম্যাক্রোফেজ, এই স্তরের প্রধান কোষ যা জীবাণু ভক্ষণ করে। ত্বক, সিরুমেন এবং লালা প্রথম প্রতিরক্ষা স্তরের অংশ।</p>",
+        },
+        {
+          id: 30,
+          question: "কোন রক্তকণিকা দেহাভ্যন্তরে রোগ জীবাণু ভক্ষণ করে?",
+          options: {
+            a: "মনোসাইট",
+            b: "বেসোফিল",
+            c: "ইওসিনোফিল",
+            d: "লিম্ফোসাইট",
+          },
+          correct: "a",
+          explanation:
+            "<p><strong>মনোসাইট (Monocytes)</strong> হলো শ্বেত রক্তকণিকার একটি প্রকার যা রক্তে সঞ্চালিত হয়। যখন তারা টিস্যুতে প্রবেশ করে, তখন তারা ম্যাক্রোফেজে রূপান্তরিত হয় এবং ফ্যাগোসাইটোসিসের মাধ্যমে <strong>রোগ জীবাণু ভক্ষণ করে</strong>। নিউট্রোফিলও জীবাণু ভক্ষণ করে, তবে বিকল্পগুলির মধ্যে মনোসাইট একটি প্রধান ফ্যাগোসাইটিক কোষ।</p>",
+        },
+        {
+          id: 31,
+          question: "যকৃতে অবস্থিত ম্যাক্রোফেজ কোষকে বলে-",
+          options: {
+            a: "মাইক্রোগ্লিয়া",
+            b: "ডেনড্রাইটিক",
+            c: "অস্টিওব্লাস্ট",
+            d: "কাপফার",
+          },
+          correct: "d",
+          explanation:
+            "<p>বিভিন্ন কলায় ম্যাক্রোফেজের নির্দিষ্ট নাম রয়েছে। <strong>যকৃতে (Liver) অবস্থিত ম্যাক্রোফেজ কোষকে কাপফার কোষ (Kupffer cells)</strong> বলে। মাইক্রোগ্লিয়া মস্তিষ্কের ম্যাক্রোফেজ, ডেনড্রাইটিক কোষ হলো অ্যান্টিজেন-উপস্থাপনকারী কোষ, এবং অস্টিওব্লাস্ট হলো হাড় গঠনকারী কোষ।</p>",
+        },
+        {
+          id: 32,
+          question: "পাকস্থলি থেকে নিঃসৃত হাইড্রোক্লোরিক এসিডের পিএইচ কত?",
+          options: {
+            a: "৭-৮",
+            b: "2-3",
+            c: "৮-৯",
+            d: "১০-১১",
+          },
+          correct: "b",
+          explanation:
+            "<p>পাকস্থলি থেকে নিঃসৃত <strong>হাইড্রোক্লোরিক অ্যাসিড (Hydrochloric acid - HCl)</strong> অত্যন্ত শক্তিশালী অ্যাসিড, যার pH মাত্রা <strong>২-৩</strong> এর মধ্যে থাকে। এই উচ্চ অম্লতা খাদ্য পরিপাকে সাহায্য করে এবং খাদ্যের সাথে প্রবেশ করা বেশিরভাগ জীবাণুকে ধ্বংস করে।</p>",
+        },
+        {
+          id: 33,
+          question: "কোন কোষটি মানুষের দেহে রোগ প্রতিরোধ করে?",
+          options: {
+            a: "লোহিত রক্তকণিকা",
+            b: "অণুচক্রিকা",
+            c: "শ্বেত রক্তকণিকা",
+            d: "কোনোটিই নয়",
+          },
+          correct: "c",
+          explanation:
+            "<p>মানুষের দেহে <strong>শ্বেত রক্তকণিকা (White blood cells বা Leukocytes)</strong> হলো রোগ প্রতিরোধ ব্যবস্থার প্রধান উপাদান। বিভিন্ন ধরনের শ্বেত রক্তকণিকা (যেমন নিউট্রোফিল, লিম্ফোসাইট, মনোসাইট, ইওসিনোফিল, বেসোফিল) বিভিন্ন উপায়ে জীবাণু, ভাইরাস এবং অন্যান্য ক্ষতিকারক পদার্থের বিরুদ্ধে লড়াই করে দেহকে রক্ষা করে।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                            <label class="option" data-option="${option}">
+                              <div class="circle">${option}</div>
+                              <span class="option-text">${question.options[option]}</span>
+                            </label>
+                          `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                               <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                               <div class="explanation-content">
+                                 <div class="explanation-label">ব্যাখ্যা:</div>
+                                 ${question.explanation}
+                               </div>
+                             </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                          <p class="question-label">${index + 1}. ${
+            question.question
+          }</p>
+                          <div class="options">
+                            ${optionsHTML}
+                          </div>
+                          ${explanationHTML}
+                        `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
